@@ -1,5 +1,5 @@
 import socket       # comunicação
-import threading    # paralelismo
+import _thread    # paralelismo
 import os           # funcionalidades do sistema (UNIX/LINUX)
 import json
 
@@ -30,7 +30,7 @@ class Servidor:
 
         self.s = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
         self.s.bind( ( self.HOST, self.PORTA ) )
-        self.s.listen()
+        self.s.listen( 4 )
 
     # processa divisão para {"a":10,"b":2} requisitado PROTECTED
     def divisao( self, byteStr ):
@@ -43,18 +43,21 @@ class Servidor:
         resp = '{\"r\":' + str( resultado ) + '}'
         return bytes( resp, encode )
             
-
-    # aceita conexão, responde requisição e extermina o socket
-    def aceitarConexao( self ):
+    def aceitarConexao( self, cli_sock, addr ):
             while True:
-                conn, addr = self.s.accept()
-                dados = conn.recv( 32 )
+                dados = cli_sock.recv( 32 )
                 print(dados)
                 if dados:
-                    conn.send( self.divisao( dados ) )
-                    self.s.close()
+                    cli_sock.send( self.divisao( dados ) )
                     break
+            cli_sock.close()
+
+    def escutar( self ):
+        while True:
+            conn, addr = self.s.accept()
+            _thread.start_new_thread( self.aceitarConexao, ( conn, addr ) )
+        self.s.close()
 
 app = Servidor( 8080 )
-app.aceitarConexao()
+app.escutar()
 
