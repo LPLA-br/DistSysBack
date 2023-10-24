@@ -1,3 +1,5 @@
+#!/bin/python
+
 import socket       # comunicação
 import _thread    # paralelismo
 import os           # funcionalidades do sistema (UNIX/LINUX)
@@ -6,14 +8,14 @@ import json
 # SERVIDOR TCP C/python
 
 """
-socket()  Instância um "endpoint"
-bind()    Acopla uma porta ao socket instânciado
-listen()  Escuta aguardando por conexões
- accept()  Aceitação de conexão
-  connect() Estabelecimento da comunicação
-   send()    Mandar dados
-   recv()    Receber dados
-  shutdown()   Encerrar conexão?
+socket()  Instância um "endpoint" S|C
+bind()    Acopla uma porta ao socket instânciado SERVIDOR
+listen()  Escuta aguardando por conexões SERVIDOR
+accept()  Aceitação de conexão SERVIDOR
+connect() Estabelecimento da comunicação CLIENT
+send()    Mandar dados S|C
+recv()    Receber dados S|C
+shutdown()   Encerrar conexão?
 close()   Exterminar socket
 """
 
@@ -32,26 +34,30 @@ class Servidor:
         self.s.bind( ( self.HOST, self.PORTA ) )
         self.s.listen( 4 )
 
-    # processa divisão para {"a":10,"b":2} requisitado PROTECTED
-    def divisao( self, byteStr ):
+    # processa soma para {"a":10,"b":2} requisitado PROTECTED
+    # decodifica trata recodifica
+    def soma( self, byteStr ):
 
         dic = {}
-        encode = 'utf-8'
+        charset = 'utf-8'
 
-        dic = json.loads( byteStr.decode( encode ) )
-        resultado = ( dic['a'] / dic['b'] )
+        dic = json.loads( byteStr.decode( charset ) )
+        resultado = ( dic['a'] + dic['b'] )
         resp = '{\"r\":' + str( resultado ) + '}'
-        return bytes( resp, encode )
-            
-    def aceitarConexao( self, cli_sock, addr ):
-            while True:
-                dados = cli_sock.recv( 32 )
-                print(dados)
-                if dados:
-                    cli_sock.send( self.divisao( dados ) )
-                    break
-            cli_sock.close()
 
+        return bytes( resp, charset )
+
+    # método paralelo para tratamento de requisição
+    def aceitarConexao( self, cli_sock, addr ):
+        while True:
+            dados = cli_sock.recv( 32 )
+            print(dados)
+            if dados:
+                cli_sock.send( self.soma( dados ) )
+                break
+        cli_sock.close()
+
+    # escutando por requisições advindas de clientes
     def escutar( self ):
         while True:
             conn, addr = self.s.accept()
