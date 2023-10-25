@@ -4,36 +4,48 @@ import socket
 import os
 import sys
 import json
+import time
+import random
 
 # Aplicação do usuário
 class AgenteUsuario:
-    
+
+    CARGATAMANHO = 64
+    CHARSET = 'utf-8'
+
     def __init__( self, ipServidor, porta ):
         self.pid = os.getpid()
+        self.cpid = self.gerarClientPid()
         self.endereco = ( ipServidor, porta )
         self.s = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
 
-    # obtendo pid do agente usuário
+    # obtendo pid do processo do agente usuário
     def get_mostrarPid( self ):
         return self.pid
 
+    # gera o pid de cliente com base no UNIX
+    # TIMESTAMP corrente no momento da instânciação
+    # da classe. cpid
+    def gerarClientPid( self ):
+        return random.randint( 0, int( time.time() ) )
+
     # transfere dados ao servidor e recebe resposta d'servidor
+    # emitindo-a na stdout do cliente
     def requisitarSoma( self, a, b ):
 
-        dados = '{"a":' + str(a) + ',"b":' + str(b) + ',"pidcli":' + str(self.pid) + '}'
-        charset = 'utf-8'
+        dados = '{"a":' + str(a) + ',"b":' + str(b) + ',"pid":' + str(self.pid) + ',"cpid":' + str(self.cpid) + '}'
 
         try:
 
-            self.s.send( bytes( dados, charset ) )
-            resp = self.s.recv( 32 )
-            print( json.loads( bytes.decode( resp, charset ) ) )
+            self.s.send( bytes( dados, self.CHARSET ) )
+            resp = self.s.recv( self.CARGATAMANHO )
+            print( json.loads( bytes.decode( resp, self.CHARSET ) ) )
 
         finally:
             self.s.close()
 
     def conectar( self ):
-        #verificando conexão
+        #VERIFICANDO CONEXÃO
         try:
 
             self.s.connect( self.endereco )
@@ -43,17 +55,18 @@ class AgenteUsuario:
             else:
                 self.requisitarSoma( int(input('a>')), int(input('b>')) )
 
-        except TimeoutError:
-            print( 'ERRO: servidor especificado não disponível' )
+        except socket.error as e: 
+            print ("ERRO DE CONEXÃO: %s" % e)
+
+        finally:
+            self.s.close()
 
 
-# cliente.py [IP PORTA] [A B]
 
 if ( len(sys.argv) == 5 ):
-    #linha de comando
+    # cliente.py [IP PORTA]
     app = AgenteUsuario( sys.argv[1] , int(sys.argv[2]) )
     app.conectar()
 else:
-    #interação direta
     app = AgenteUsuario( input( 'IP>' ), int(input( 'PORTA>' )) )
     app.conectar()

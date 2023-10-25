@@ -23,6 +23,8 @@ close()   Exterminar socket
 # cria socket, atende requisição, mata socket
 class Servidor:
 
+    CARGATAMANHO = 64
+
     def __init__( self, porta ):
 
         self.HOST = socket.gethostbyname( socket.gethostname() )
@@ -47,13 +49,26 @@ class Servidor:
 
         return bytes( resp, charset )
 
+    # resposta correta para requisição correta
+    def validador( self, byteStr ):
+
+        dic = {}
+        charset = 'utf-8'
+
+        dic = json.loads( byteStr.decode( charset ) )
+
+        if 'a' in dic and 'b' in dic:
+            return self.soma( byteStr )
+        else:
+            return b'{}'
+
     # método paralelo para tratamento de requisição
     def aceitarConexao( self, cli_sock, addr ):
         while True:
-            dados = cli_sock.recv( 32 )
+            dados = cli_sock.recv( self.CARGATAMANHO )
             print(dados)
             if dados:
-                cli_sock.send( self.soma( dados ) )
+                cli_sock.send( self.validador( dados ) )
                 break
         cli_sock.close()
 
@@ -65,5 +80,8 @@ class Servidor:
         self.s.close()
 
 app = Servidor( 8080 )
-app.escutar()
+try:
+    app.escutar()
+except KeyboardInterrupt:
+    print( 'servidor interrompido' )
 
