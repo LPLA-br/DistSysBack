@@ -24,13 +24,14 @@ close()   Exterminar socket
 class Servidor:
 
     CARGATAMANHO = 64
+    CHARSET = 'utf-8'
 
     def __init__( self, porta ):
 
         self.HOST = socket.gethostbyname( socket.gethostname() )
         self.PORTA = porta
-
         self.id = os.getpid()
+        print(f'{{"serverip":{self.HOST},"porta":{self.PORTA},"serverpid":{self.id}}}')
 
         self.s = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
         self.s.bind( ( self.HOST, self.PORTA ) )
@@ -41,21 +42,19 @@ class Servidor:
     def soma( self, byteStr ):
 
         dic = {}
-        charset = 'utf-8'
 
-        dic = json.loads( byteStr.decode( charset ) )
+        dic = json.loads( byteStr.decode( self.CHARSET ) )
         resultado = ( dic['a'] + dic['b'] )
         resp = '{\"r\":' + str( resultado ) + '}'
 
-        return bytes( resp, charset )
+        return bytes( resp, self.CHARSET )
 
     # resposta correta para requisição correta
     def validador( self, byteStr ):
 
         dic = {}
-        charset = 'utf-8'
 
-        dic = json.loads( byteStr.decode( charset ) )
+        dic = json.loads( byteStr.decode( self.CHARSET ) )
 
         if 'a' in dic and 'b' in dic:
             return self.soma( byteStr )
@@ -66,7 +65,7 @@ class Servidor:
     def aceitarConexao( self, cli_sock, addr ):
         while True:
             dados = cli_sock.recv( self.CARGATAMANHO )
-            print(dados)
+            print( dados.decode( self.CHARSET ) )
             if dados:
                 cli_sock.send( self.validador( dados ) )
                 break
@@ -76,6 +75,7 @@ class Servidor:
     def escutar( self ):
         while True:
             conn, addr = self.s.accept()
+            print( f'{{"clienteip":{addr[0]},"clienteporta":{addr[1]}}}' )
             _thread.start_new_thread( self.aceitarConexao, ( conn, addr ) )
         self.s.close()
 

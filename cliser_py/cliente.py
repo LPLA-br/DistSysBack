@@ -16,6 +16,7 @@ class AgenteUsuario:
     def __init__( self, ipServidor, porta ):
         self.pid = os.getpid()
         self.cpid = self.gerarClientPid()
+        print(f'{{"pid":{self.pid},"cpid":{self.cpid}}}')
         self.endereco = ( ipServidor, porta )
         self.s = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
 
@@ -66,7 +67,11 @@ class AgenteUsuario:
 if ( len(sys.argv) == 5 ):
     # cliente.py [IP PORTA]
     app = AgenteUsuario( sys.argv[1] , int(sys.argv[2]) )
+    print(f'{{"servidor":{sys.argv[1]},"porta":{sys.argv[2]}}}')
     app.conectar()
 else:
-    app = AgenteUsuario( input( 'IP>' ), int(input( 'PORTA>' )) )
+    ip = input( 'IP> ' )
+    porta = int( input( 'PORTA> ' ) )
+    app = AgenteUsuario( ip, porta )
+    print(f'{{"servidor":{ip},"porta":{porta}}}')
     app.conectar()
