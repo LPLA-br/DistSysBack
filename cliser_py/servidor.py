@@ -54,6 +54,7 @@ class Fila:
                 j -= 1
             self.fila[j+1] = prioridade
             i += 1
+        print(self.fila)
 
 # servidor que faz divisões
 # cria socket, atende requisição, mata socket
@@ -85,7 +86,7 @@ class Servidor:
 
         dic = json.loads( byteStr.decode( self.CHARSET ) )
         resultado = ( dic['a'] + dic['b'] )
-        resp = '{\"r\":' + str( resultado ) + '}'
+        resp = '{\"r\":' + str( resultado ) + ',"pri":' + str(dic['pri']) + '}'
 
         return bytes( resp, self.CHARSET )
 
@@ -106,6 +107,7 @@ class Servidor:
         while True:
             dados = cli_sock.recv( self.CARGATAMANHO )
             print( dados.decode( self.CHARSET ) )
+            print('\n')
             
             if dados:
                 novoDic = json.loads( dados.decode( self.CHARSET ) )
@@ -135,7 +137,8 @@ class Servidor:
             print( f'{{"clienteip":{addr[0]},"clienteporta":{addr[1]}}}' )
             _thread.start_new_thread( self.aceitarConexao, ( conn, addr ) )
             sleep(5)
-            _thread.start_new_thread( self.atenderConexao, () )
+            #_thread.start_new_thread( self.atenderConexao, () )
+            self.atenderConexao()
         self.s.close()
 
 

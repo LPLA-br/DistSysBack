@@ -45,7 +45,6 @@ class AgenteUsuario:
             self.s.close()
 
     def conectar( self ):
-        #VERIFICANDO CONEXÃO
         try:
             self.s.connect( self.endereco )
             if len(sys.argv) == ARGS_NUM :
@@ -62,8 +61,8 @@ if sys.argv[1] == '--help' :
 
 if ( len(sys.argv) == ARGS_NUM ):
     # cliente.py [IP PORTA]
-    app = AgenteUsuario( sys.argv[1] , int(sys.argv[2]), int(sys.argv[3]) )
-    print(f'{{"servidor":{sys.argv[1]},"porta":{sys.argv[2]},"pri":{sys.argv[3]}}}')
+    app = AgenteUsuario( sys.argv[1] , int(sys.argv[2]), sys.argv[5] )
+    print(f'{{"servidor":"{sys.argv[1]}","porta":{sys.argv[2]},"a":{sys.argv[3]},"b":{sys.argv[4]},"pri":{sys.argv[5]}}}')
     app.conectar()
 else:
     print('use --help para ver a lista de argumentos de linha de comando')
