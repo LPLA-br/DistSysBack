@@ -39,6 +39,9 @@ class Fila:
     # ordena prioridades conforme o campo "pri" número
     def ordenacaoInsercaoPrioridades( self ):
 
+        if len(self.fila) <= 1:
+            return
+
         # posicionais
         i=1
         j=0
@@ -54,7 +57,18 @@ class Fila:
                 j -= 1
             self.fila[j+1] = prioridade
             i += 1
-        print(self.fila)
+
+    #retorna as prioridade de uma
+    #fila do primeiro elemento até o
+    #ultimo.
+    def get_pri_fila(self):
+        retorno = []
+        for elemento in self.fila:
+            retorno.append( { "pri" : elemento['pri'] } )
+        return retorno
+
+    def get_tam(self):
+        return len(self.fila)
 
 # servidor que faz divisões
 # cria socket, atende requisição, mata socket
@@ -91,7 +105,7 @@ class Servidor:
         return bytes( resp, self.CHARSET )
 
     # verifica os campos dos dados recebidos.
-    # não lida com socket.
+    # não lida com socket. usado na resposta.
     def validador( self, byteStr ):
         dic = {}
         dic = json.loads( byteStr.decode( self.CHARSET ) )
@@ -113,21 +127,23 @@ class Servidor:
                 novoDic = json.loads( dados.decode( self.CHARSET ) )
                 novoDic.update( {"concli": cli_sock} )
                 self.fila.enfileirar( novoDic )
+                self.fila.ordenacaoInsercaoPrioridades()
+                print(f'{{"FilaPrioridades":{self.fila.get_pri_fila()}}}')
 
-                if len(self.fila.fila) > 1:
-                    self.fila.ordenacaoInsercaoPrioridades()
                 break
 
 
     # desenfileira, atende requisição e fecha conexão.
+    # retorna 1 para atendimento e 0 para fila vazia
     def atenderConexao(self):
         estrutura = self.fila.desenfileirar()
         if estrutura == 0:
-            return
+            return False
         else:
             cli_sock = estrutura.pop("concli")
             cli_sock.send( self.validador( bytes( json.dumps(estrutura) , self.CHARSET) ) )
             cli_sock.close()
+            return True
         
 
     # escutando por requisições advindas de clientes.
@@ -136,11 +152,22 @@ class Servidor:
             conn, addr = self.s.accept()
             print( f'{{"clienteip":{addr[0]},"clienteporta":{addr[1]}}}' )
             _thread.start_new_thread( self.aceitarConexao, ( conn, addr ) )
-            sleep(5)
-            #_thread.start_new_thread( self.atenderConexao, () )
-            self.atenderConexao()
-        self.s.close()
 
+            # quando a fila tiver 5 elementos atender todas
+            # as requisições que lá tiverem
+            if self.fila.get_tam() == 5:
+                while True:
+                    sleep(2)
+                    if self.atenderConexao():
+                        print(f'{{"FilaPrioridades":{self.fila.get_pri_fila()}}}')
+                    else:
+                        break
+        app.encerrarSocket()
+                    
+
+    # encerra o socket do servidor
+    def encerrarSocket():
+        self.s.close()
 
 app = Servidor( 8080 )
 try:
