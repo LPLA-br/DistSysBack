@@ -7,16 +7,19 @@ import json
 import time
 import random
 
+ARGS_NUM = 6
+
 # Aplicação do usuário
 class AgenteUsuario:
 
     CARGATAMANHO = 64
     CHARSET = 'utf-8'
 
-    def __init__( self, ipServidor, porta ):
+    def __init__( self, ipServidor, porta, prioridade ):
         self.pid = os.getpid()
         self.cpid = self.gerarClientPid()
-        print(f'{{"pid":{self.pid},"cpid":{self.cpid}}}')
+        self.prioridade = prioridade
+        print(f'{{"pid":{self.pid},"cpid":{self.cpid},"pri":{self.prioridade}}}')
         self.endereco = ( ipServidor, porta )
         self.s = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
 
@@ -33,45 +36,33 @@ class AgenteUsuario:
     # transfere dados ao servidor e recebe resposta d'servidor
     # emitindo-a na stdout do cliente
     def requisitarSoma( self, a, b ):
-
-        dados = '{"a":' + str(a) + ',"b":' + str(b) + ',"pid":' + str(self.pid) + ',"cpid":' + str(self.cpid) + '}'
-
+        dados = '{"a":' + str(a) + ',"b":' + str(b) + ',"pid":' + str(self.pid) + ',"cpid":' + str(self.cpid) + ',"pri":' + str(self.prioridade) + '}'
         try:
-
             self.s.send( bytes( dados, self.CHARSET ) )
             resp = self.s.recv( self.CARGATAMANHO )
             print( json.loads( bytes.decode( resp, self.CHARSET ) ) )
-
         finally:
             self.s.close()
 
     def conectar( self ):
-        #VERIFICANDO CONEXÃO
         try:
-
             self.s.connect( self.endereco )
-
-            if len(sys.argv) == 5 :
+            if len(sys.argv) == ARGS_NUM :
                 self.requisitarSoma( int(sys.argv[3]) , int(sys.argv[4]) )
-            else:
-                self.requisitarSoma( int(input('a>')), int(input('b>')) )
-
         except socket.error as e: 
             print ("ERRO DE CONEXÃO: %s" % e)
-
         finally:
             self.s.close()
 
 
+if sys.argv[1] == '--help' :
+    print('comando SERVIDOR PORTA N1 N2 PRIORIDADE={1,2,3}')
+    exit()
 
-if ( len(sys.argv) == 5 ):
+if ( len(sys.argv) == ARGS_NUM ):
     # cliente.py [IP PORTA]
-    app = AgenteUsuario( sys.argv[1] , int(sys.argv[2]) )
-    print(f'{{"servidor":{sys.argv[1]},"porta":{sys.argv[2]}}}')
+    app = AgenteUsuario( sys.argv[1] , int(sys.argv[2]), sys.argv[5] )
+    print(f'{{"servidor":"{sys.argv[1]}","porta":{sys.argv[2]},"a":{sys.argv[3]},"b":{sys.argv[4]},"pri":{sys.argv[5]}}}')
     app.conectar()
 else:
-    ip = input( 'IP> ' )
-    porta = int( input( 'PORTA> ' ) )
-    app = AgenteUsuario( ip, porta )
-    print(f'{{"servidor":{ip},"porta":{porta}}}')
-    app.conectar()
+    print('use --help para ver a lista de argumentos de linha de comando')
