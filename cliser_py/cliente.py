@@ -40,7 +40,7 @@ class AgenteUsuario:
         try:
             self.s.send( bytes( dados, self.CHARSET ) )
             resp = self.s.recv( self.CARGATAMANHO )
-            print( json.loads( bytes.decode( resp, self.CHARSET ) ) )
+            print( '\t', json.loads( bytes.decode( resp, self.CHARSET ) ) )
         finally:
             self.s.close()
 
