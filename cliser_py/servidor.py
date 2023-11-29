@@ -102,7 +102,7 @@ class Servidor:
         dic = json.loads( byteStr.decode( self.CHARSET ) )
         resultado = ( dic['a'] + dic['b'] )
         #resp = '{\"r\":' + str( resultado ) + ',"pri":' + str(dic['pri']) + '}'
-        resp = f'{{"r":"{str(resultado)}","pri":"{str(dic["pri"])}","cpid":"{dic["cpid"]}"}}'
+        resp = f'{{"r":"{str(resultado)}","pri":"{str(dic["pri"])}","cpid":{dic["cpid"]},"pid":{dic["pid"]}}}'
 
         return bytes( resp, self.CHARSET )
 
@@ -125,6 +125,7 @@ class Servidor:
             
             if dados:
                 novoDic = json.loads( dados.decode( self.CHARSET ) )
+                print( f'{{ "clienteip":{addr[0]},"clienteporta":{addr[1]},"cpid":{novoDic["cpid"]},"pid":{novoDic["pid"]},"a":{novoDic["a"]},"b"{novoDic["b"]},"pri":{novoDic["pri"]} }}' )
                 novoDic.update( {"concli": cli_sock} )
                 self.fila.enfileirar( novoDic )
                 self.fila.ordenacaoInsercaoPrioridades()
@@ -149,11 +150,13 @@ class Servidor:
         while True:
             sleep(1)
             if self.atenderConexao():
-                print(f'{{"fila":{self.fila.get_pri_fila()}}}')
+                print(f'{{"filaTamanho":{self.fila.get_tam()}}}')
+                #print(f'{"fila":{self.fila.get_pri_fila()}}')
             else:
                 break
 
     # N segundos para a execução do método de atender a fila.
+    # método semi-bloqueante.
     def temporizadorAssincrono(self, tempo):
         self.temporizador = True
         sleep(tempo)
@@ -167,7 +170,6 @@ class Servidor:
             if self.temporizador == False:
                 _thread.start_new_thread( self.temporizadorAssincrono, (20,) )
             conn, addr = self.s.accept()
-            print( f'{{"clienteip":{addr[0]},"clienteporta":{addr[1]}}}' )
             _thread.start_new_thread( self.aceitarConexao, ( conn, addr ) )
         app.encerrarSocket()
                     

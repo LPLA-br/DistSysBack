@@ -19,7 +19,7 @@ class AgenteUsuario:
         self.pid = os.getpid()
         self.cpid = self.gerarClientPid()
         self.prioridade = prioridade
-        print(f'{{"pid":{self.pid},"cpid":{self.cpid},"pri":{self.prioridade}}}')
+        print(f'{{"servidor":"{ipServidor}","porta":{porta},"my_pid":{self.pid},"my_cpid":{self.cpid},"pri":{self.prioridade}}}')
         self.endereco = ( ipServidor, porta )
         self.s = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
 
@@ -31,7 +31,13 @@ class AgenteUsuario:
     # TIMESTAMP corrente no momento da instânciação
     # da classe. cpid
     def gerarClientPid( self ):
-        return random.randint( 0, int( time.time() ) )
+        return random.randint( 0, 999 )
+
+    def get_pid(self):
+        return this.pid
+
+    def get_cpid(self):
+        return this.cpid
 
     # transfere dados ao servidor e recebe resposta d'servidor
     # emitindo-a na stdout do cliente
@@ -62,7 +68,6 @@ if sys.argv[1] == '--help' :
 if ( len(sys.argv) == ARGS_NUM ):
     # cliente.py [IP PORTA]
     app = AgenteUsuario( sys.argv[1] , int(sys.argv[2]), sys.argv[5] )
-    print(f'{{"servidor":"{sys.argv[1]}","porta":{sys.argv[2]},"a":{sys.argv[3]},"b":{sys.argv[4]},"pri":{sys.argv[5]}}}')
     app.conectar()
 else:
     print('use --help para ver a lista de argumentos de linha de comando')
