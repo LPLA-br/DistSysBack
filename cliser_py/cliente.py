@@ -19,7 +19,6 @@ class AgenteUsuario:
         self.pid = os.getpid()
         self.cpid = self.gerarClientPid()
         self.prioridade = prioridade
-        print(f'{{"servidor":"{ipServidor}","porta":{porta},"my_pid":{self.pid},"my_cpid":{self.cpid},"pri":{self.prioridade}}}')
         self.endereco = ( ipServidor, porta )
         self.s = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
 
@@ -43,10 +42,13 @@ class AgenteUsuario:
     # emitindo-a na stdout do cliente
     def requisitarSoma( self, a, b ):
         dados = '{"a":' + str(a) + ',"b":' + str(b) + ',"pid":' + str(self.pid) + ',"cpid":' + str(self.cpid) + ',"pri":' + str(self.prioridade) + '}'
+        #print(f'{{"servidor":"{ipServidor}","porta":{porta},"my_pid":{self.pid},"my_cpid":{self.cpid},"pri":{self.prioridade}}}')
+        print(f'\npid: {self.pid} | númeroA: {a}  númeroB: {b} prioridade: {self.prioridade}\n')
         try:
             self.s.send( bytes( dados, self.CHARSET ) )
             resp = self.s.recv( self.CARGATAMANHO )
-            print( '\t', json.loads( bytes.decode( resp, self.CHARSET ) ) )
+            #print( '\t', json.loads( bytes.decode( resp, self.CHARSET ) ) )
+            print( bytes.decode( resp, self.CHARSET ) )
         finally:
             self.s.close()
 

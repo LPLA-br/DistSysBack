@@ -23,21 +23,11 @@ def requisitarCliente():
 
 try:
     while True:
-        sleep(1)
+        sleep(2)
         numero1 = random.randrange( 0, 9999 )
         numero2 = random.randrange( 0, 9999 )
         prioridade = random.randrange( 1,4 )
-
-        if ( requisicoes > 0 ):
-            _thread.start_new_thread( requisitarCliente, () )
-        elif ( requisicoes == 0 ):
-            try:
-                requisicoes = int(input('>'))
-            except ValueError:
-                print('Insira um inteiro meu chapa !!! definindo para 10')
-                requisicoes = 10
-
-        requisicoes -= 1
+        _thread.start_new_thread( requisitarCliente, () )
 
 except KeyboardInterrupt:
     print( 'Requisitador encerrado' )

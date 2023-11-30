@@ -102,7 +102,8 @@ class Servidor:
         dic = json.loads( byteStr.decode( self.CHARSET ) )
         resultado = ( dic['a'] + dic['b'] )
         #resp = '{\"r\":' + str( resultado ) + ',"pri":' + str(dic['pri']) + '}'
-        resp = f'{{"r":"{str(resultado)}","pri":"{str(dic["pri"])}","cpid":{dic["cpid"]},"pid":{dic["pid"]}}}'
+        #resp = f'{{"r":"{str(resultado)}","pri":"{str(dic["pri"])}","cpid":{dic["cpid"]},"pid":{dic["pid"]}}}'
+        resp = f'\n\tpid:{dic["pid"]} | prioridade:{str(dic["pri"])} | {dic["a"]} + {dic["b"]} = {str(resultado)}'
 
         return bytes( resp, self.CHARSET )
 
