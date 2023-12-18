@@ -76,13 +76,14 @@ class Servidor:
 
     CARGATAMANHO = 64
     CHARSET = 'utf-8'
+    temporizador = False
 
     def __init__( self, porta ):
 
         self.HOST = socket.gethostbyname( socket.gethostname() )
         self.PORTA = porta
         self.id = os.getpid()
-        print(f'{{"serverip":{self.HOST},"porta":{self.PORTA},"serverpid":{self.id}}}')
+        print(f'{{"serverip":{self.HOST},"porta":{self.PORTA},"serverpid":{self.id}}}\n')
 
         self.s = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
         self.s.bind( ( self.HOST, self.PORTA ) )
@@ -100,7 +101,9 @@ class Servidor:
 
         dic = json.loads( byteStr.decode( self.CHARSET ) )
         resultado = ( dic['a'] + dic['b'] )
-        resp = '{\"r\":' + str( resultado ) + ',"pri":' + str(dic['pri']) + '}'
+        #resp = '{\"r\":' + str( resultado ) + ',"pri":' + str(dic['pri']) + '}'
+        #resp = f'{{"r":"{str(resultado)}","pri":"{str(dic["pri"])}","cpid":{dic["cpid"]},"pid":{dic["pid"]}}}'
+        resp = f'\n\tpid:{dic["pid"]} | prioridade:{str(dic["pri"])} | {dic["a"]} + {dic["b"]} = {str(resultado)}'
 
         return bytes( resp, self.CHARSET )
 
@@ -120,15 +123,13 @@ class Servidor:
     def aceitarConexao( self, cli_sock, addr ):
         while True:
             dados = cli_sock.recv( self.CARGATAMANHO )
-            print( dados.decode( self.CHARSET ) )
-            print('\n')
             
             if dados:
                 novoDic = json.loads( dados.decode( self.CHARSET ) )
+                print( f'{{ "clienteip":{addr[0]},"clienteporta":{addr[1]},"cpid":{novoDic["cpid"]},"pid":{novoDic["pid"]},"a":{novoDic["a"]},"b"{novoDic["b"]},"pri":{novoDic["pri"]} }}' )
                 novoDic.update( {"concli": cli_sock} )
                 self.fila.enfileirar( novoDic )
                 self.fila.ordenacaoInsercaoPrioridades()
-                print(f'{{"FilaPrioridades":{self.fila.get_pri_fila()}}}')
 
                 break
 
@@ -144,24 +145,33 @@ class Servidor:
             cli_sock.send( self.validador( bytes( json.dumps(estrutura) , self.CHARSET) ) )
             cli_sock.close()
             return True
-        
+
+    #atende às requisições para temporizadorAssincrono()
+    def atenderFila(self):
+        while True:
+            sleep(1)
+            if self.atenderConexao():
+                print(f'{{"filaTamanho":{self.fila.get_tam()}}}')
+                #print(f'{"fila":{self.fila.get_pri_fila()}}')
+            else:
+                break
+
+    # N segundos para a execução do método de atender a fila.
+    # método semi-bloqueante.
+    def temporizadorAssincrono(self, tempo):
+        self.temporizador = True
+        sleep(tempo)
+        self.atenderFila()
+        self.temporizador = False
+
 
     # escutando por requisições advindas de clientes.
     def escutar( self ):
         while True:
+            if self.temporizador == False:
+                _thread.start_new_thread( self.temporizadorAssincrono, (20,) )
             conn, addr = self.s.accept()
-            print( f'{{"clienteip":{addr[0]},"clienteporta":{addr[1]}}}' )
             _thread.start_new_thread( self.aceitarConexao, ( conn, addr ) )
-
-            # quando a fila tiver 5 elementos atender todas
-            # as requisições que lá tiverem
-            if self.fila.get_tam() == 5:
-                while True:
-                    sleep(2)
-                    if self.atenderConexao():
-                        print(f'{{"FilaPrioridades":{self.fila.get_pri_fila()}}}')
-                    else:
-                        break
         app.encerrarSocket()
                     
 
