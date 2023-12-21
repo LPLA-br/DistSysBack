@@ -6,8 +6,6 @@ import os           # funcionalidades do sistema (UNIX/LINUX)
 import json
 from time import sleep
 
-# Aplicação com zona crítica para
-# threads
 
 # classe responsável pela
 # fila de dados e requisições.
@@ -59,6 +57,11 @@ class Fila:
     def get_tam(self):
         return len(self.fila)
 
+# Threadas não seguem nos métodos de
+# saque e deposito enquanto self.bloquear
+# tiver sido definido como verdadeiro por
+# outra thread.
+
 # servidor que faz divisões
 # cria socket, atende requisição, mata socket
 class Servidor:
@@ -77,23 +80,34 @@ class Servidor:
         self.s.listen( 4 )
         self.fila = Fila()
         self.saldo = 1000
+        self.bloquear = False
 
     def saque( self, byteStr ):# bytestring
         d = {}
         d = json.loads( byteStr.decode( self.CHARSET ) )
         resp = f'\nsem resposta'
+        while self.bloquear == True:
+            print(f'bloqueando o pid: {d["pid"]}')
+            continue
+        self.bloquear = True
         if d['valor'] > self.saldo:
             resp = f'\n\tpid:{d["pid"]} | prioridade:{str(d["pri"])} | Saque maior que o saldo atual de: {self.saldo}'
         else:
             self.saldo -= d['valor']
             resp = f'\n\tpid:{d["pid"]} | prioridade:{str(d["pri"])} | Valor sacado: {d["valor"]} saldo corrente: {self.saldo}'
+        self.bloquear = False
         return bytes( resp, self.CHARSET )
 
     def deposito( self, byteStr ):# bytestring
         d = {}
         d = json.loads( byteStr.decode( self.CHARSET ) )
+        while self.bloquear == True:
+            print(f'bloqueando o pid: {d["pid"]}')
+            continue
+        self.bloquear = True
         self.saldo += d['valor']
         resp = f'\n\tpid:{d["pid"]} | prioridade:{str(d["pri"])} | Valor depositado: {d["valor"]} saldo corrente: {self.saldo}'
+        self.bloquear = False
         return bytes( resp, self.CHARSET )
 
     def validador( self, byteStr ):# bytestring
@@ -107,22 +121,21 @@ class Servidor:
         else:
             return b'{"err":400,"msg":"bad request"}'
 
-    # thread
     def aceitarConexao( self, cli_sock, addr ):
         while True:
             dados = cli_sock.recv( self.CARGATAMANHO )
             if dados:
-                novoDic = json.loads( dados.decode( self.CHARSET ) )
-                print( f'{{ "clienteip":{addr[0]},"clienteporta":{addr[1]},"cpid":{novoDic["cpid"]},"pid":{novoDic["pid"]},"a":{novoDic["a"]},"b"{novoDic["b"]},"pri":{novoDic["pri"]} }}' )
-                novoDic.update( {"concli": cli_sock} )
-                self.fila.enfileirar( novoDic )
+                d = json.loads( dados.decode( self.CHARSET ) )
+                print( f'{{ "clienteip":{addr[0]},"clienteporta":{addr[1]},"cpid":{d["cpid"]},"pid":{d["pid"]},"pri":{d["pri"]},"valor":{d["valor"]},"tipo":{d["tipo"]} }}' )
+                d.update( {"concli": cli_sock} )
+                self.fila.enfileirar( d )
                 self.fila.ordenacaoInsercaoPrioridades()
                 break
 
 
     # desenfileira, atende requisição e fecha conexão.
     # retorna True para atendimento e False para fila vazia
-    def atenderConexao(self):
+    def atenderRequisicao(self):
         estrutura = self.fila.desenfileirar()
         if estrutura == 0:
             return False
@@ -136,7 +149,7 @@ class Servidor:
     def atenderFila(self):
         while True:
             sleep(1)
-            if self.atenderConexao():
+            if self.atenderRequisicao():
                 print(f'{{"filaTamanho":{self.fila.get_tam()}}}')
             else:
                 break

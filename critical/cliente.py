@@ -39,7 +39,7 @@ class AgenteUsuario:
         return this.cpid
 
     #Envia dados e recebe respostas.
-    def enviarRequisicao(self,string):# void
+    def enviarRequisicao(self,dados):# void
         try:
             self.s.send( bytes( dados, self.CHARSET ) )
             resp = self.s.recv( self.CARGATAMANHO )
@@ -51,19 +51,20 @@ class AgenteUsuario:
         dados=''
         if tipo == 'saque':
             dados='{"tipo":"'+str(tipo)+'","valor":'+str(valor)+',"pid":'+str(self.pid)+',"cpid":'+str(self.cpid)+',"pri":'+str(self.prioridade)+'}'
+            print(f'\npid: {self.pid} | saque de {valor}R$ com prioridade: {self.prioridade}\n')
         elif tipo == 'deposito':
             dados='{"tipo":"'+str(tipo)+'","valor":'+str(valor)+',"pid":'+str(self.pid)+',"cpid":'+str(self.cpid)+',"pri":'+str(self.prioridade)+'}'
+            print(f'\npid: {self.pid} | depósito de {valor}R$ com prioridade: {self.prioridade}\n')
         else:
             print('operação bancária inválida')
             return
-        print(f'\npid: {self.pid} | saque de {valor}R$ com prioridade: {self.prioridade}\n')
         self.enviarRequisicao(dados)
 
     def conectar( self ):
         try:
             self.s.connect( self.endereco )
             if len(sys.argv) == ARGS_NUM :
-                self.operacaoBancaria( int(sys.argv[3]) , int(sys.argv[4]) )# valor tipo_de_operação
+                self.operacaoBancaria( int(sys.argv[4]) , str(sys.argv[5]) )
         except socket.error as e: 
             print ("ERRO DE CONEXÃO: %s" % e)
         finally:
@@ -71,11 +72,12 @@ class AgenteUsuario:
 
 
 if sys.argv[1] == '--help' :
-    print('comando SERVIDOR PORTA VALOR TIPO_DE_OPERAÇÃO_BANCÁRIA')
+    print('comando SERVIDOR PORTA PRIORIDADE VALOR TIPO_DE_OPERAÇÃO_BANCÁRIA')
     exit()
 
 if ( len(sys.argv) == ARGS_NUM ):
-    app = AgenteUsuario( sys.argv[1] , int(sys.argv[2]), sys.argv[5] )# ip porta prioridade
+    # ip porta prioridade valor tipo_de_operação
+    app = AgenteUsuario( sys.argv[1] , int(sys.argv[2]), sys.argv[3] )
     app.conectar()
 else:
     print('use --help para ver a lista de argumentos de linha de comando')
