@@ -12,7 +12,7 @@ ARGS_NUM = 6
 # Aplicação do usuário
 class AgenteUsuario:
 
-    CARGATAMANHO = 256
+    CARGATAMANHO = 1024
     CHARSET = 'utf-8'
 
     def __init__( self, ipServidor, porta, prioridade ):
