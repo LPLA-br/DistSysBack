@@ -82,32 +82,42 @@ class Servidor:
         self.saldo = 1000
         self.bloquear = False
 
+    #verifica se outra thread está na zona de esclusão.
+    #thread X entra em loop equanto A não sair da zona de exclusão.
+    def verificarExclusao(self, pid):
+        while self.bloquear == True:
+            sleep(1)
+            print(f'pid bloqueado:{pid}')
+            continue
+
     def saque( self, byteStr ):# bytestring
         d = {}
         d = json.loads( byteStr.decode( self.CHARSET ) )
         resp = f'\nsem resposta'
-        while self.bloquear == True:
-            print(f'bloqueando o pid: {d["pid"]}')
-            continue
+        self.verificarExclusao( d["pid"] )
+
         self.bloquear = True
+        sleep(5) #cada thread leva 5 segundos para completar a transação financeira.
         if d['valor'] > self.saldo:
             resp = f'\n\tpid:{d["pid"]} | prioridade:{str(d["pri"])} | Saque maior que o saldo atual de: {self.saldo}'
         else:
             self.saldo -= d['valor']
             resp = f'\n\tpid:{d["pid"]} | prioridade:{str(d["pri"])} | Valor sacado: {d["valor"]} saldo corrente: {self.saldo}'
         self.bloquear = False
+
         return bytes( resp, self.CHARSET )
 
     def deposito( self, byteStr ):# bytestring
         d = {}
         d = json.loads( byteStr.decode( self.CHARSET ) )
-        while self.bloquear == True:
-            print(f'bloqueando o pid: {d["pid"]}')
-            continue
+        self.verificarExclusao( d["pid"] )
+
         self.bloquear = True
+        sleep(5)
         self.saldo += d['valor']
         resp = f'\n\tpid:{d["pid"]} | prioridade:{str(d["pri"])} | Valor depositado: {d["valor"]} saldo corrente: {self.saldo}'
         self.bloquear = False
+
         return bytes( resp, self.CHARSET )
 
     def validador( self, byteStr ):# bytestring
@@ -132,17 +142,26 @@ class Servidor:
                 self.fila.ordenacaoInsercaoPrioridades()
                 break
 
+    #trata a estrutura obtida em atenderRequisicao() Thread
+    def tratarEstrutura(self, estrutura):
+        cli_sock = estrutura.pop("concli")
+        cli_sock.send( self.validador( bytes( json.dumps(estrutura) , self.CHARSET) ) )
+        cli_sock.close()
+
 
     # desenfileira, atende requisição e fecha conexão.
     # retorna True para atendimento e False para fila vazia
     def atenderRequisicao(self):
-        estrutura = self.fila.desenfileirar()
+        estrutura  = self.fila.desenfileirar()#110 simulação de desenfileiramento.
+        estrutura2 = self.fila.desenfileirar()#100
         if estrutura == 0:
             return False
+        elif estrutura2 == 0 and estrutura != 0:
+            self.tratarEstrutura( estrutura, )
+            return True
         else:
-            cli_sock = estrutura.pop("concli")
-            cli_sock.send( self.validador( bytes( json.dumps(estrutura) , self.CHARSET) ) )
-            cli_sock.close()
+            _thread.start_new_thread( self.tratarEstrutura, (estrutura,)  )
+            _thread.start_new_thread( self.tratarEstrutura, (estrutura2,) )
             return True
 
     #atende às requisições na fila para temporizadorAssincrono()
@@ -155,7 +174,7 @@ class Servidor:
                 break
 
     # N segundos para a execução do método de atender a fila.
-    # método semi-bloqueante.
+    # método semi-bloqueante. (Demonstração possível ao professor)
     def temporizadorAssincrono(self, tempo):
         self.temporizador = True
         sleep(tempo)
